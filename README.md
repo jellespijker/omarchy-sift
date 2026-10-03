@@ -96,7 +96,8 @@ Details that matter:
 - **Calibrated or not.** Jev servers return real probabilities, so Sift can tag automatically when confidence is high. A chat model
   only guesses a confidence, so Sift will *suggest* tags and wait for you to accept them. `sift setup --trust` lets a chat model tag
   automatically at high confidence (0.9) after you have looked at its suggestions.
-- **Privacy.** A remote service receives the text of your files (roughly the first 2,000 characters, in a few pieces). Sift refuses
+- **Privacy.** Whether an endpoint counts as local is decided on the address Sift actually connects to (one lookup, no re-resolution), so a
+  hostname cannot change its answer between the check and the request. Proxy environment variables are ignored. A remote service receives the text of your files (roughly the first 2,000 characters, in a few pieces). Sift refuses
   to talk to a non-local endpoint until you consent for that backend (`"consent": true`, set by `sift setup`). Plain-HTTP endpoints are only
   accepted on this machine or on networks you list in `trusted_networks`.
 - **API keys are never stored in the JSON.** Use a private key file (`sift setup` offers this and is the right choice for scheduled

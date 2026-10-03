@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.1
+
+- **Security: consent is bound to the address actually used.** Whether a backend is "local" was decided from one DNS lookup and the HTTP client
+  then resolved the name again, so a hostname whose answer changed from loopback to a public address could have received file text without
+  `consent`. The decision and the connection now share a single lookup (`sift/netpolicy.py`): Sift connects to exactly an address the backend
+  may use (this machine, a `trusted_networks` range, or anywhere when you consented), and refuses before connecting otherwise. Reported by the
+  marketplace security review. Sift no longer uses HTTP(S)_PROXY variables (a proxy would receive the request instead of the approved
+  destination); point it at a gateway endpoint instead.
+
 ## 0.3.0
 
 Hardening for use on other people's machines (ADR-0013), plus prompts, profiles, escalation and tuning (ADR-0011, ADR-0012).

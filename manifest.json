@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "jellespijker.sift",
   "name": "Sift",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "author": "Jelle Spijker",
   "license": "MIT",
   "description": "Tag your files with the AI of your choice, local or commercial, as standard file tags that Dolphin and other tools read",

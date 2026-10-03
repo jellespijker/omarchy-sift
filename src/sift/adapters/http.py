@@ -3,14 +3,50 @@ from __future__ import annotations
 
 import http.client
 import json
+import socket
 import time
 import urllib.error
 import urllib.parse
 import urllib.request
 
+from .. import netpolicy
+
 
 class BackendError(RuntimeError):
     pass
+
+
+class _PinnedMixin:
+    """Connect to an address the network policy approved, from the single lookup it made, never to a name the OS resolves again."""
+
+    def _pinned_socket(self):
+        last: Exception | None = None
+        for _fam, addr in netpolicy.resolve(self.host, self.port):
+            try:
+                return socket.create_connection((addr, self.port), self.timeout, self.source_address)
+            except OSError as e:
+                last = e
+        raise OSError(f"cannot connect to {self.host}: {last}")            # an OSError: the callers retry transient failures
+
+
+class _HTTPConn(_PinnedMixin, http.client.HTTPConnection):
+    def connect(self):
+        self.sock = self._pinned_socket()
+
+
+class _HTTPSConn(_PinnedMixin, http.client.HTTPSConnection):
+    def connect(self):
+        self.sock = self._context.wrap_socket(self._pinned_socket(), server_hostname=self.host)
+
+
+class _HTTPHandler(urllib.request.HTTPHandler):
+    def http_open(self, req):
+        return self.do_open(_HTTPConn, req)
+
+
+class _HTTPSHandler(urllib.request.HTTPSHandler):
+    def https_open(self, req):
+        return self.do_open(_HTTPSConn, req, context=self._context)
 
 
 class _SameHostRedirects(urllib.request.HTTPRedirectHandler):
@@ -24,7 +60,20 @@ class _SameHostRedirects(urllib.request.HTTPRedirectHandler):
         return super().redirect_request(req, fp, code, msg, headers, newurl)
 
 
-_OPENER = urllib.request.build_opener(_SameHostRedirects)
+# No proxy handler: a proxy would receive the request instead of the destination the policy approved, so Sift connects directly.
+_OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}), _HTTPHandler, _HTTPSHandler, _SameHostRedirects)
+
+
+def open_request(req: urllib.request.Request, timeout: float):
+    """The one way adapters open a URL: pinned to the approved address, same-host redirects only."""
+    try:
+        return _OPENER.open(req, timeout=timeout)
+    except netpolicy.NetworkRefused as e:
+        raise BackendError(str(e)) from e
+    except urllib.error.URLError as e:
+        if isinstance(e.reason, netpolicy.NetworkRefused):
+            raise BackendError(str(e.reason)) from e
+        raise
 
 
 def safe_url(url: str) -> str:
@@ -47,7 +96,7 @@ def post_json(url: str, body: dict, headers: dict[str, str] | None = None, timeo
     last: Exception | None = None
     for attempt in range(retries + 1):
         try:
-            with _OPENER.open(req, timeout=timeout) as r:
+            with open_request(req, timeout) as r:
                 return json.load(r)
         except urllib.error.HTTPError as e:
             detail = _detail(e.read(200))
@@ -68,7 +117,7 @@ def post_json(url: str, body: dict, headers: dict[str, str] | None = None, timeo
 def get_json(url: str, headers: dict[str, str] | None = None, timeout: float = 10.0) -> dict:
     req = urllib.request.Request(url, headers=headers or {})
     try:
-        with _OPENER.open(req, timeout=timeout) as r:
+        with open_request(req, timeout) as r:
             return json.load(r)
     except urllib.error.HTTPError as e:
         raise BackendError(f"HTTP {e.code}") from e

@@ -230,6 +230,8 @@ def check_backend(name: str, b: dict[str, Any], cfg: dict[str, Any]) -> None:
     the user explicitly approved for that backend with `"consent": true`."""
     nets = list(cfg.get("trusted_networks", []))
     check_endpoint(b["endpoint"], nets, bool(cfg.get("allow_insecure")))
+    from . import netpolicy
+    netpolicy.register(b["endpoint"], bool(b.get("consent")), nets)       # enforced again at connect time, on the address really used
     if not is_local(b["endpoint"], nets) and not b.get("consent"):
         host = urlparse(b["endpoint"]).hostname
         raise ConfigError(

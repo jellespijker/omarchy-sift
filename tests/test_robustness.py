@@ -344,3 +344,112 @@ def test_the_demo_marker_never_redirects_scheduled_jobs(monkeypatch, tmp_path):
     assert not demo.active()
     monkeypatch.delenv("SIFT_DEMO")
     assert demo.active()
+
+
+# ---- consent is bound to the address actually used (DNS rebinding) ---------------------------------------------------------
+
+class _EchoServer:
+    def __init__(self):
+        import http.server
+        import threading
+        outer = self
+        outer.hits = 0
+
+        class H(http.server.BaseHTTPRequestHandler):
+            def do_POST(self):
+                outer.hits += 1
+                self.rfile.read(int(self.headers.get("Content-Length", 0)))
+                body = b'{"ok": true}'
+                self.send_response(200)
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+
+            log_message = lambda *a: None
+        self.srv = http.server.HTTPServer(("127.0.0.1", 0), H)
+        self.port = self.srv.server_port
+        threading.Thread(target=self.srv.serve_forever, daemon=True).start()
+
+
+def _answers(monkeypatch, *sequence, port):
+    """A resolver whose answer for rebind.example changes on every lookup, and a spy that records every address connected to."""
+    import socket
+    calls = {"lookups": 0, "connected": []}
+    real_getaddrinfo, real_create = socket.getaddrinfo, socket.create_connection
+
+    def fake_getaddrinfo(host, p, *a, **k):
+        if host != "rebind.example":
+            return real_getaddrinfo(host, p, *a, **k)
+        ip = sequence[min(calls["lookups"], len(sequence) - 1)]
+        calls["lookups"] += 1
+        return [(socket.AF_INET, socket.SOCK_STREAM, 6, "", (ip, p))]
+
+    def fake_create(addr, *a, **k):
+        calls["connected"].append(addr[0])
+        if addr[0].startswith("203.0.113."):
+            raise OSError("test: the public address must never be dialled")
+        return real_create(("127.0.0.1", addr[1]), *a, **k)
+    monkeypatch.setattr(socket, "getaddrinfo", fake_getaddrinfo)
+    monkeypatch.setattr(socket, "create_connection", fake_create)
+    return calls
+
+
+def test_a_hostname_that_changes_its_answer_cannot_redirect_file_text_to_a_public_address(monkeypatch):
+    from sift import netpolicy
+    from sift.adapters.http import BackendError, post_json
+    srv = _EchoServer()
+    url = f"http://rebind.example:{srv.port}"
+    netpolicy.register(url, allow_remote=False, trusted_networks=[])           # what check_backend does for a backend without consent
+    # first lookup (the old pre-flight check) says loopback, every later lookup says a public address
+    calls = _answers(monkeypatch, "127.0.0.1", "203.0.113.9", port=srv.port)
+    assert post_json(url + "/x", {"a": 1}, retries=0) == {"ok": True}
+    assert calls["connected"] == ["127.0.0.1"] and srv.hits == 1                # one lookup, used for the decision and the connection
+    srv.srv.shutdown()
+
+
+def test_a_public_answer_without_consent_is_refused_before_any_connection(monkeypatch):
+    from sift import netpolicy
+    from sift.adapters.http import BackendError, post_json
+    url = "http://rebind.example:9"
+    netpolicy.register(url, allow_remote=False, trusted_networks=[])
+    calls = _answers(monkeypatch, "203.0.113.9", port=9)
+    with pytest.raises(BackendError, match="no consent"):
+        post_json(url + "/x", {}, retries=2)
+    assert calls["connected"] == [] and calls["lookups"] == 1                    # refused, never retried, never dialled
+
+
+def test_consent_allows_a_remote_address_and_trusted_networks_allow_theirs(monkeypatch):
+    from sift import netpolicy
+    netpolicy.register("http://rebind.example:9", allow_remote=True, trusted_networks=[])
+    calls = _answers(monkeypatch, "203.0.113.9", port=9)
+    assert [a for _, a in netpolicy.resolve("rebind.example", 9)] == ["203.0.113.9"]
+    netpolicy.register("http://rebind.example:9", allow_remote=False, trusted_networks=["203.0.113.0/24"])
+    assert [a for _, a in netpolicy.resolve("rebind.example", 9)] == ["203.0.113.9"]
+    netpolicy.register("http://rebind.example:9", allow_remote=False, trusted_networks=["198.51.100.0/24"])
+    with pytest.raises(netpolicy.NetworkRefused):
+        netpolicy.resolve("rebind.example", 9)
+
+
+def test_loopback_literals_and_mapped_addresses_are_local_and_unregistered_hosts_default_to_local_only():
+    from sift import netpolicy
+    assert netpolicy.resolve("127.0.0.1", 8791) and netpolicy.resolve("::1", 8791) and netpolicy.resolve("::ffff:127.0.0.1", 1)
+    with pytest.raises(netpolicy.NetworkRefused):
+        netpolicy.resolve("8.8.8.8", 443)                                      # never registered: default is this machine only
+
+
+def test_check_backend_registers_the_policy_that_http_enforces():
+    from sift import netpolicy
+    cfgmod.check_backend("remote", {"endpoint": "https://api.example.com", "consent": True}, {})
+    assert netpolicy.policy_for("api.example.com", 443).allow_remote
+    with pytest.raises(cfgmod.ConfigError):
+        cfgmod.check_backend("nope", {"endpoint": "https://203.0.113.9"}, {})
+    assert not netpolicy.policy_for("203.0.113.9", 443).allow_remote
+
+
+def test_every_adapter_opens_urls_through_the_pinned_opener():
+    """urllib.request.urlopen resolves names itself, so no adapter may call it directly."""
+    import re
+    for f in (Path(__file__).parent.parent / "src/sift").rglob("*.py"):
+        if f.name == "http.py":
+            continue
+        assert not re.search(r"\burlopen\(", f.read_text()), f

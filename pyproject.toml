@@ -1,6 +1,6 @@
 [project]
 name = "omarchy-sift"
-version = "0.3.0"
+version = "0.3.1"
 description = "Local file triage for Omarchy using a small classifier and an editable decision tree"
 requires-python = ">=3.12"
 license = { text = "MIT" }

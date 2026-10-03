@@ -9,7 +9,7 @@ import urllib.request
 from ..core.prompts import PROPOSE, render
 from ..usage import estimate_tokens
 from ..validate import MAX_TAG, normalize_tag
-from .http import BackendError
+from .http import BackendError, open_request
 
 
 
@@ -29,7 +29,7 @@ class OllamaProposer:
                 "options": {"temperature": 0.2, "num_predict": 200}}
         req = urllib.request.Request(self.endpoint + "/api/generate", json.dumps(body).encode(), {"Content-Type": "application/json"})
         try:
-            with urllib.request.urlopen(req, timeout=self.timeout) as r:
+            with open_request(req, self.timeout) as r:
                 meta = json.load(r)
                 raw = meta.get("response", "")
         except (urllib.error.URLError, OSError, ValueError) as e:
@@ -56,6 +56,6 @@ class OllamaProposer:
         req = urllib.request.Request(self.endpoint + "/api/generate", json.dumps({"model": self.model, "keep_alive": 0}).encode(),
                                      {"Content-Type": "application/json"})
         try:
-            urllib.request.urlopen(req, timeout=30).read()
+            open_request(req, 30).read()
         except (urllib.error.URLError, OSError):
             pass
