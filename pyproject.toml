@@ -1,0 +1,24 @@
+[project]
+name = "omarchy-sift"
+version = "0.3.0"
+description = "Local file triage for Omarchy using a small classifier and an editable decision tree"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+dependencies = []
+
+[project.scripts]
+sift = "sift.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.setuptools.package-data]
+sift = ["i18n/*.json"]

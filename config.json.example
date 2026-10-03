@@ -1,0 +1,11 @@
+{
+  "dirs": ["~/Downloads"],
+  "ignore": [],
+  "write_xattrs": false,
+  "threshold_act": 0.8,
+  "threshold_review": 0.4,
+  "index_budget": 400,
+  "index_max_seconds": 1500,
+  "trusted_networks": [],
+  "notifications": {"errors": true, "milestones": true, "ideas": true, "review": false}
+}

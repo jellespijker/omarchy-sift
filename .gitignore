@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+.venv/
+eval/labels.csv
+eval/results/
+config.json
+
+sift-report.jsonl
+eval/tag-labels.csv
+.impeccable/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+eval/*.csv

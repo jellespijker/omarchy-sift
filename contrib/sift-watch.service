@@ -1,0 +1,22 @@
+[Unit]
+Description=Sift: classify new files in watched folders
+After=network-online.target
+
+[Service]
+Type=simple
+# Use this OR the scheduled index timer (`sift schedule set`), not both: they would classify the same new files twice.
+# Adjust the path to where this repo (or the installed plugin) lives.
+ExecStart=%h/.config/omarchy/plugins/jellespijker.sift/bin/sift watch
+Restart=on-failure
+RestartSec=30
+Nice=10
+# Hardening: the watcher only reads watched folders and writes xattrs and its own state.
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+# The watcher writes extended attributes on files under your home folder and its state under ~/.local/state.
+ReadWritePaths=%h
+Environment=SIFT_DEMO=0
+
+[Install]
+WantedBy=default.target

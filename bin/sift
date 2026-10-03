@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Launcher used by the Quickshell panel and systemd. Resolves the repo/plugin dir even through symlinks.
+here="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
+export PYTHONDONTWRITEBYTECODE=1
+export PYTHONPATH="$here/src${PYTHONPATH:+:$PYTHONPATH}"
+exec python3 -m sift.cli "$@"

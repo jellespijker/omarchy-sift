@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "jellespijker.sift",
+  "name": "Sift",
+  "version": "0.3.0",
+  "author": "Jelle Spijker",
+  "license": "MIT",
+  "description": "Tag your files with the AI of your choice, local or commercial, as standard file tags that Dolphin and other tools read",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "Panel.qml"
+  },
+  "barWidget": {
+    "displayName": "Sift",
+    "description": "Review suggested tags, manage tags and choose what is scanned",
+    "category": "Utilities",
+    "aliases": [
+      "sift",
+      "tags",
+      "files",
+      "downloads",
+      "classify",
+      "llm",
+      "ai"
+    ],
+    "allowMultiple": false,
+    "defaultSection": "right",
+    "defaults": {},
+    "schema": []
+  }
+}

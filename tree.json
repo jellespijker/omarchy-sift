@@ -1,0 +1,215 @@
+{
+  "root": "root",
+  "nodes": {
+    "root": {
+      "kind": "choice",
+      "input": "text",
+      "instructions": "What kind of file content is this?",
+      "labels": {
+        "document": "prose document such as a bill, manual, letter, email or meeting notes",
+        "code": "source code or a configuration or script file",
+        "log": "program output, log lines, error messages or stack traces",
+        "data": "tables of numbers, measurements, exported data or CSV content",
+        "other": "anything else"
+      },
+      "children": {
+        "document": "document"
+      }
+    },
+    "document": {
+      "kind": "choice",
+      "input": "text",
+      "instructions": "What kind of document is this?",
+      "labels": {
+        "invoice": "invoice, receipt, bill or payment request",
+        "manual": "manual, datasheet, specification or how-to guide",
+        "meeting": "meeting notes, agenda or minutes",
+        "correspondence": "personal or business email or letter",
+        "other": "any other document"
+      },
+      "children": {}
+    }
+  },
+  "rules": [
+    {
+      "ext": [
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".gif",
+        ".webp",
+        ".svg",
+        ".bmp",
+        ".heic"
+      ],
+      "tag": "image"
+    },
+    {
+      "ext": [
+        ".zip",
+        ".tar",
+        ".gz",
+        ".tgz",
+        ".7z",
+        ".rar",
+        ".xz",
+        ".bz2"
+      ],
+      "tag": "archive"
+    },
+    {
+      "ext": [
+        ".stl",
+        ".3mf",
+        ".obj",
+        ".step",
+        ".stp",
+        ".ufp"
+      ],
+      "tag": "3d-model"
+    },
+    {
+      "ext": [
+        ".mp4",
+        ".mkv",
+        ".mov",
+        ".webm",
+        ".mp3",
+        ".wav",
+        ".flac"
+      ],
+      "tag": "media"
+    },
+    {
+      "ext": [
+        ".exe",
+        ".msi",
+        ".deb",
+        ".rpm",
+        ".appimage",
+        ".iso",
+        ".dmg",
+        ".pkg"
+      ],
+      "tag": "installer"
+    }
+  ],
+  "vocabulary": {
+    "transcript": {
+      "description": "verbatim transcript of spoken conversation, with filler words like uh, eh, ehm and no formatting",
+      "require": "\\b(uh|um|eh|ehm|euh|hmm|you know|i mean|dus|nou|ja)\\b",
+      "require_min": 5
+    },
+    "job-hunt": {
+      "description": "a job interview or job application: an employer or recruiter and a candidate discussing the role, the team, experience, skills, salary, motivation or next steps",
+      "require": "\\b(job|interview|recruit\\w*|vacanc\\w*|salary|candidate|sollicit\\w*|vacature|salaris|sollicitatie|functie|ervaring|werkgever|baan|collega\\w*)\\b",
+      "require_min": 3
+    },
+    "meeting-notes": {
+      "description": "written notes or minutes of a meeting",
+      "require": "\\b(meeting|agenda|attendees?|minutes|action items?|notulen|vergadering)\\b",
+      "require_min": 3
+    },
+    "invoice": {
+      "description": "a bill, invoice or receipt",
+      "require": "\\b(invoice|receipt|amount due|factuur|vat|btw|total due)\\b",
+      "require_min": 2
+    },
+    "contract": {
+      "description": "a contract, agreement or legal terms",
+      "require": "\\b(agreement|contract\\w*|clause|liabilit\\w*|parties|terms and conditions|warrant\\w*|confidential\\w*|obligation\\w*|overeenkomst)\\b",
+      "require_min": 3
+    },
+    "3d-printing": {
+      "description": "about 3D printing, filament, extrusion, nozzles or printers",
+      "require": "\\b(3d[- ]print\\w*|print(er|ers|ing|ed)?|filament|nozzle|extrud\\w*|slic(er|ing)|fdm|g-?code|build ?plate|cura)\\b",
+      "require_min": 3
+    },
+    "research": {
+      "description": "a research report, experiment description or scientific analysis",
+      "require": "\\b(research|experiment\\w*|hypothes\\w*|onderzoek|literature|findings)\\b",
+      "require_min": 3
+    },
+    "python": {
+      "description": "Python source code",
+      "require": "(?m)^\\s*(def \\w+\\(|import \\w+|from [\\w.]+ import|class \\w+.*:|if __name__)",
+      "require_min": 3,
+      "labels": [
+        "code"
+      ]
+    },
+    "shell-script": {
+      "description": "a shell script or command-line snippet",
+      "require": "(?m)(^#!/.*(ba|z|da)?sh|^\\s*(echo|export|sudo|fi|esac|done)\\b|\\$\\{?\\w+\\}?)",
+      "require_min": 4,
+      "labels": [
+        "code"
+      ]
+    },
+    "javascript": {
+      "description": "JavaScript or TypeScript source code",
+      "require": "\\b(const|let|function|=>|require\\(|import .* from|export (default|const))",
+      "require_min": 4,
+      "labels": [
+        "code"
+      ]
+    },
+    "c-cpp": {
+      "description": "C or C++ source code",
+      "require": "(#include|\\bint main|std::|\\bvoid \\w+\\(|\\bstruct \\w+|nullptr)",
+      "require_min": 3,
+      "labels": [
+        "code"
+      ]
+    },
+    "sql": {
+      "description": "SQL statements or a database schema",
+      "require": "\\b(select|insert into|create table|alter table|where|join|group by)\\b",
+      "require_min": 3,
+      "labels": [
+        "code"
+      ]
+    },
+    "crash-log": {
+      "description": "a crash report, stack trace or error log showing a failure",
+      "require": "\\b(traceback|stack ?trace|segmentation fault|segfault|panic|fatal|exception|core dumped|backtrace)\\b",
+      "require_min": 2,
+      "labels": [
+        "log"
+      ]
+    },
+    "build-log": {
+      "description": "output of a compiler, build tool or package manager",
+      "require": "\\b(compiling|linking|warning:|error:|make\\[|cmake|npm|cargo|gcc|g\\+\\+|build (succeeded|failed))",
+      "require_min": 3,
+      "labels": [
+        "log"
+      ]
+    },
+    "system-log": {
+      "description": "operating system or service log lines such as systemd, kernel or journal output",
+      "require": "\\b(systemd|kernel|journal|dmesg|sshd|daemon|started|stopped)\\b",
+      "require_min": 4,
+      "labels": [
+        "log"
+      ]
+    }
+  },
+  "vocabulary_skip": [
+    "data",
+    "log"
+  ],
+  "profiles": [
+    {
+      "name": "pdf",
+      "match": {
+        "extensions": [
+          ".pdf"
+        ]
+      },
+      "exclude_labels": [
+        "code"
+      ]
+    }
+  ]
+}

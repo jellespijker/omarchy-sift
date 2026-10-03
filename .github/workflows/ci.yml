@@ -1,0 +1,38 @@
+name: tests
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install
+        run: |
+          pip install pytest
+          sudo apt-get update && sudo apt-get install -y jq
+      - name: Validate plugin layout and manifest
+        run: bash .github/scripts/validate-plugin.sh
+      - name: Syntax check every module
+        run: python -m compileall -q src
+      - name: Tests (a filesystem with extended attributes, when the runner has one)
+        run: python -m pytest -q
+      - name: Tests on a filesystem without extended attributes (simulated)
+        run: SIFT_TEST_NO_XATTR=1 python -m pytest -q
+      - name: Tests on tmpfs (real extended attributes)
+        run: |
+          mkdir -p /dev/shm/sift-tmp
+          TMPDIR=/dev/shm/sift-tmp python -m pytest -q

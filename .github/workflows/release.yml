@@ -1,0 +1,83 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Tag name to release (e.g. v1.0.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Validate Plugin
+        run: bash .github/scripts/validate-plugin.sh
+
+      - name: Determine and verify release version
+        id: version
+        run: |
+          set -euo pipefail
+          TAG="${{ inputs.tag_name || github.ref_name }}"
+          MANIFEST_VER="$(jq -r .version manifest.json)"
+          EXPECTED_TAG="v${MANIFEST_VER}"
+
+          if [[ "$TAG" != "$EXPECTED_TAG" ]]; then
+            echo "::error::Release tag '$TAG' does not match manifest.json version '$MANIFEST_VER' (expected '$EXPECTED_TAG')"
+            exit 1
+          fi
+
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$MANIFEST_VER" >> "$GITHUB_OUTPUT"
+          echo "Releasing version $MANIFEST_VER under tag $TAG"
+
+      - name: Package release artifact
+        run: |
+          set -euo pipefail
+          TAR_NAME="omarchy-sift-${{ steps.version.outputs.tag }}.tar.gz"
+          tar --exclude='./.git*' \
+              --exclude='./.github*' \
+              --exclude="*.tar.gz" \
+              --exclude="*.sha256" \
+              -czf "/tmp/$TAR_NAME" .
+          mv "/tmp/$TAR_NAME" .
+          echo "Created $TAR_NAME"
+          sha256sum "$TAR_NAME" > "${TAR_NAME}.sha256"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="${{ steps.version.outputs.tag }}"
+          TAR_NAME="omarchy-sift-${TAG}.tar.gz"
+
+          # Create or update release
+          gh release create "$TAG" \
+            "$TAR_NAME" \
+            "${TAR_NAME}.sha256" \
+            --title "Release $TAG" \
+            --generate-notes
