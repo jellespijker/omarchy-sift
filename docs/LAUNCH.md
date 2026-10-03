@@ -2,7 +2,7 @@
 
 ## Before the first public commit
 
-- [ ] Replace `<git-url>` in the README (twice) with the repository address.
+- [x] Repository: https://github.com/jellespijker/omarchy-sift (README install line points at it).
 - [ ] Decide the plugin id is final: `jellespijker.sift` (manifest, `Panel.qml`, IPC target, systemd path in `contrib/`). Changing it later breaks installs.
 - [ ] Tag the release (`v0.3.0`) after the first commit; `manifest.json`, `pyproject.toml` and `CHANGELOG.md` already say 0.3.0.
 - [ ] Confirm nothing personal is tracked: `git ls-files | xargs grep -Il "/home/\|@"` (the test suite also checks for private hosts). `eval/*.csv`,

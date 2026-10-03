@@ -66,7 +66,7 @@ German, French, Spanish, Chinese and Arabic (right-to-left included). Translatio
 ## Quick start
 
 ```bash
-omarchy plugin add <git-url> --enable
+omarchy plugin add https://github.com/jellespijker/omarchy-sift.git --enable
 sift setup                              # pick a brain; it checks the connection and offers a private key file
 sift doctor                             # confirms folders, xattr support, timers
 sift dirs add ~/Documents               # what to scan (cloud/network drives are never scanned)
