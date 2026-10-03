@@ -320,6 +320,36 @@ Dolphin shows them through Baloo: `balooctl6 enable`, add your folders to Baloo'
 - Prompt injection: text in your files is passed to the classifier as data. The worst a hostile file can do is steer its own tag; no
   file content is ever executed or interpolated into a command.
 
+## Install, update and remove
+
+```bash
+omarchy plugin add https://github.com/jellespijker/omarchy-sift.git --enable   # install
+omarchy plugin update jellespijker.sift                                         # update
+sift schedule off                                                               # stop the background timers
+omarchy plugin remove jellespijker.sift                                         # remove the plugin
+```
+
+Removing the plugin does not touch your files or tags. To also remove Sift's own data, delete `~/.config/sift` (settings, key files) and
+`~/.local/state/sift` (report and logs), and remove any timers with `sift schedule off` first. To take back the tags Sift wrote,
+run `sift untag --all` before you remove it (every change is logged); tags you added yourself stay.
+
+## What Sift changes on your system
+
+Nothing happens until you run `sift setup` or use the panel's settings.
+- **Files:** Sift only writes the `user.xdg.tags` attribute, and only when "Tag files automatically" is on (it is **off** by default;
+  until then results are only reported and offered for review). It never moves, renames, edits or deletes a file.
+- **Configuration:** it creates `~/.config/sift/config.json` (mode 0600) and never edits your Omarchy, Hyprland or shell configuration.
+  Enabling the plugin adds one bar widget through Omarchy's own commands.
+- **Background jobs:** `sift schedule` writes two systemd *user* units (`sift-index`, `sift-discover`); `sift schedule off` removes them.
+- **Network:** only to the classifier endpoint you configure, after you consent for that backend (local endpoints need no consent).
+- **Dependencies:** Python 3.12+ (standard library only, nothing to `pip install`). Optional: `poppler` (`pdftotext`) for PDFs,
+  `libsecret` (`secret-tool`) to keep API keys in the keyring, `libnotify` (`notify-send`) for the few desktop notifications,
+  `systemd` for scheduling, and Baloo/Dolphin if you want to browse tags there.
+
+## License
+
+[MIT](LICENSE). Sift sends no telemetry, and the plugin has no code from other projects.
+
 ## Development
 
 ```bash
