@@ -331,7 +331,7 @@ omarchy plugin remove jellespijker.sift                                         
 
 Removing the plugin does not touch your files or tags. To also remove Sift's own data, delete `~/.config/sift` (settings, key files) and
 `~/.local/state/sift` (report and logs), and remove any timers with `sift schedule off` first. To take back the tags Sift wrote,
-run `sift untag --all` before you remove it (every change is logged); tags you added yourself stay.
+run `sift untag --all` before you remove it (every change is logged); tags written by other tools stay.
 
 ## What Sift changes on your system
 
